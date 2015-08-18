@@ -1,7 +1,7 @@
 package consumer
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/streadway/amqp"
 )
@@ -10,7 +10,7 @@ func failOnError(err error, msg string) {
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
 		//panic(fmt.Sprintf("%s: %s", msg, err))
-		log.Println("Error:", err)
+		fmt.Println("Error:", err)
 	}
 }
 
@@ -22,9 +22,9 @@ func Initialize() {
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
 		//panic(fmt.Sprintf("%s: %s", msg, err))
-		log.Println("Error:", err)
+		fmt.Println("Error:", err)
 	} else {
-		log.Println("We are connected!!")
+		fmt.Println("We are connected!!")
 		defer conn.Close()
 
 		ch, err := conn.Channel()
@@ -58,12 +58,12 @@ func Initialize() {
 		go func() {
 			for d := range msgs {
 				if string(d.Body) == "done" {
-					log.Printf("Received a message: %s", d.Body)
+					fmt.Printf("Received a message: %s", d.Body)
 				}
 			}
 		}()
 
-		log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+		fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 		<-forever
 	}
 }
