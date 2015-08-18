@@ -24,7 +24,7 @@ func Initialize() {
 		//panic(fmt.Sprintf("%s: %s", msg, err))
 		fmt.Println("Error:", err)
 	} else {
-		fmt.Println("Rabbit MQ Connected!!")
+		fmt.Println("Rabbit MQ Consumer Connected!!")
 		defer conn.Close()
 
 		ch, err := conn.Channel()
@@ -58,7 +58,7 @@ func Initialize() {
 		go func() {
 			for d := range msgs {
 				if string(d.Body) == "done" {
-					fmt.Printf("Received a message: %s", d.Body)
+					fmt.Printf("\nReceived all messages: %s\n", d.Body)
 				}
 			}
 		}()
