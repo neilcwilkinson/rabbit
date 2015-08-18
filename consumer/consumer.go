@@ -24,7 +24,7 @@ func Initialize() {
 		//panic(fmt.Sprintf("%s: %s", msg, err))
 		fmt.Println("Error:", err)
 	} else {
-		fmt.Println("Connected!!")
+		fmt.Println("Rabbit MQ Connected!!")
 		defer conn.Close()
 
 		ch, err := conn.Channel()
