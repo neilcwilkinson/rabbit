@@ -16,7 +16,7 @@ func failOnError(err error, msg string) {
 
 func Initialize() {
 	// conn, err := amqp.Dial("amqp://test:letmein@10.5.212.156:5672/")
-	conn, err := amqp.Dial("amqp://fahoobagats:Fytg*pv2c,iCUT@rabbitmq-queue-nodes-9a13e:5672/")
+	conn, err := amqp.Dial("amqp://fahoobagats:Fytg*pv2c,iCUT@rabbitmq-statsnode-3a5n:5672/")
 	//failOnError(err, "Failed to connect to RabbitMQ")
 
 	if err != nil {
