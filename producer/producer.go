@@ -2,15 +2,16 @@ package producer
 
 import (
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/streadway/amqp"
 )
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
+		// log.Fatalf("%s: %s", msg, err)
+		// panic(fmt.Sprintf("%s: %s", msg, err))
+		fmt.Println("Error:", err)
 	}
 }
 
@@ -24,6 +25,7 @@ func Initialize() {
 		//panic(fmt.Sprintf("%s: %s", msg, err))
 		fmt.Println("Error:", err)
 	} else {
+		fmt.Println("Rabbit MQ Producer Connected!!")
 		defer conn.Close()
 
 		ch, err := conn.Channel()
@@ -40,6 +42,8 @@ func Initialize() {
 		)
 		failOnError(err, "Failed to declare a queue")
 
+		fmt.Sprintf("\n", time.Now(), ": starting to send\n")
+
 		i := 0
 		for i = 0; i < 100000; i++ {
 			body := fmt.Sprintf("hello %d", i)
@@ -54,6 +58,8 @@ func Initialize() {
 				})
 			failOnError(err, "Failed to publish a message")
 		}
+
+		fmt.Sprintf("\n", time.Now(), ": done sending\n")
 
 		body := fmt.Sprintf("done")
 		err = ch.Publish(
