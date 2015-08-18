@@ -24,7 +24,7 @@ func Initialize() {
 		//panic(fmt.Sprintf("%s: %s", msg, err))
 		fmt.Println("Error:", err)
 	} else {
-		fmt.Println("We are connected!!")
+		fmt.Println("Connected!!")
 		defer conn.Close()
 
 		ch, err := conn.Channel()
