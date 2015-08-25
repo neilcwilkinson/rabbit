@@ -6,6 +6,12 @@ import (
 	"github.com/streadway/amqp"
 )
 
+var (
+	conn    *amqp.Connection
+	channel *amqp.Channel
+	queue   amqp.Queue
+)
+
 func failOnError(err error, msg string) {
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
@@ -14,56 +20,85 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func Initialize() {
-	// conn, err := amqp.Dial("amqp://test:letmein@10.5.212.156:5672/")
-	conn, err := amqp.Dial("amqp://fahoobagats:Fytg*pv2c,iCUT@rabbitmq-statsnode-3a5n:5672/")
+func Initialize(uri string, queuename string) {
+	conn, err := amqp.Dial(uri)
+	// conn, err := amqp.Dial("amqp://fahoobagats:Fytg*pv2c,iCUT@rabbitmq-statsnode-3a5n:5672/")
 	//failOnError(err, "Failed to connect to RabbitMQ")
 
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
 		//panic(fmt.Sprintf("%s: %s", msg, err))
-		fmt.Println("Error:", err)
+		fmt.Println("Rabbit MQ Consumer Error:", err)
 	} else {
 		fmt.Println("Rabbit MQ Consumer Connected!!")
 		defer conn.Close()
 
-		ch, err := conn.Channel()
+		channel, err = conn.Channel()
 
 		failOnError(err, "Failed to open a channel")
-		defer ch.Close()
+		//defer ch.Close()
 
-		q, err := ch.QueueDeclare(
-			"hello", // name
-			false,   // durable
-			false,   // delete when usused
-			false,   // exclusive
-			false,   // no-wait
-			nil,     // arguments
+		queue, err = channel.QueueDeclare(
+			queuename, // name
+			false,     // durable
+			false,     // delete when usused
+			false,     // exclusive
+			false,     // no-wait
+			nil,       // arguments
 		)
+
 		failOnError(err, "Failed to declare a queue")
 
-		msgs, err := ch.Consume(
-			q.Name, // queue
-			"",     // consumer
-			true,   // auto-ack
-			false,  // exclusive
-			false,  // no-local
-			false,  // no-wait
-			nil,    // args
+		// msgs, err := channel.Consume(
+		// 	queue.Name, // queue
+		// 	"",         // consumer
+		// 	true,       // auto-ack
+		// 	false,      // exclusive
+		// 	false,      // no-local
+		// 	false,      // no-wait
+		// 	nil,        // args
+		// )
+		// failOnError(err, "Failed to register a consumer")
+
+		Consume()
+
+		// forever := make(chan bool)
+
+		// go func() {
+		// 	for d := range msgs {
+		// 		//if string(d.Body) == "done" {
+		// 		fmt.Printf("\nReceived all messages: %s\n", d.Body)
+		// 		//}
+		// 	}
+		// }()
+
+		// fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+		// <-forever
+	}
+}
+
+func Consume() {
+	// forever := make(chan bool)
+	for {
+		msgs, err := channel.Consume(
+			queue.Name, // queue
+			"",         // consumer
+			true,       // auto-ack
+			false,      // exclusive
+			false,      // no-local
+			false,      // no-wait
+			nil,        // args
 		)
 		failOnError(err, "Failed to register a consumer")
 
-		forever := make(chan bool)
-
 		go func() {
-			for d := range msgs {
-				if string(d.Body) == "done" {
-					fmt.Printf("\nReceived all messages: %s\n", d.Body)
-				}
+			//for d := range msgs {
+			for _ = range msgs {
+				// if string(d.Body) == "done" {
+				//fmt.Printf("\nReceived message: %s\n", d.Body)
+				// }
 			}
 		}()
-
-		fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-		<-forever
 	}
+	// <-forever
 }
