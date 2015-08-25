@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	queue   amqp.Queue
+	conn           *amqp.Connection
+	channel        *amqp.Channel
+	queue          amqp.Queue
+	messageChannel = make(chan []byte)
 )
 
 func failOnError(err error, msg string) {
@@ -59,7 +60,7 @@ func Initialize(uri string, queuename string) {
 		// 	nil,        // args
 		// )
 		// failOnError(err, "Failed to register a consumer")
-
+		go receiveMessages()
 		Consume()
 
 		// forever := make(chan bool)
@@ -93,7 +94,8 @@ func Consume() {
 
 		go func() {
 			//for d := range msgs {
-			for _ = range msgs {
+			for d := range msgs {
+				messageChannel <- d.Body
 				// if string(d.Body) == "done" {
 				//fmt.Printf("\nReceived message: %s\n", d.Body)
 				// }
@@ -101,4 +103,14 @@ func Consume() {
 		}()
 	}
 	// <-forever
+}
+
+func receiveMessages() {
+	go func() {
+		for {
+			_ = <-messageChannel
+			//message := <-messageChannel
+			//fmt.Printf("State changed: %s\n", message)
+		}
+	}()
 }
