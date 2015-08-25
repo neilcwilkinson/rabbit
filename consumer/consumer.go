@@ -60,8 +60,6 @@ func Initialize(uri string, queuename string) {
 		// 	nil,        // args
 		// )
 		// failOnError(err, "Failed to register a consumer")
-		go receiveMessages()
-		Consume()
 
 		// forever := make(chan bool)
 
@@ -75,34 +73,37 @@ func Initialize(uri string, queuename string) {
 
 		// fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 		// <-forever
+
+		go receiveMessages()
+		Consume()
+
 	}
 }
 
 func Consume() {
-	// forever := make(chan bool)
-	for {
-		msgs, err := channel.Consume(
-			queue.Name, // queue
-			"",         // consumer
-			true,       // auto-ack
-			false,      // exclusive
-			false,      // no-local
-			false,      // no-wait
-			nil,        // args
-		)
-		failOnError(err, "Failed to register a consumer")
+	msgs, err := channel.Consume(
+		queue.Name, // queue
+		"",         // consumer
+		true,       // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // args
+	)
+	failOnError(err, "Failed to register a consumer")
 
-		go func() {
-			//for d := range msgs {
-			for d := range msgs {
-				messageChannel <- d.Body
-				// if string(d.Body) == "done" {
-				//fmt.Printf("\nReceived message: %s\n", d.Body)
-				// }
-			}
-		}()
-	}
-	// <-forever
+	//holy shit, don't use a for lopp here!
+	forever := make(chan bool)
+	go func() {
+		//for d := range msgs {
+		for d := range msgs {
+			messageChannel <- d.Body
+			// if string(d.Body) == "done" {
+			//fmt.Printf("\nReceived message: %s\n", d.Body)
+			// }
+		}
+	}()
+	<-forever
 }
 
 func receiveMessages() {
