@@ -7,30 +7,66 @@ import (
 )
 
 var (
+	rabbitmquri = ""
+	queuename   = ""
+
 	conn           *amqp.Connection
 	channel        *amqp.Channel
 	queue          amqp.Queue
 	messageChannel = make(chan []byte)
+
+	connectionChannel = make(chan bool)
+)
+
+//Exposed for calling go code by capitalizing the first character.
+var (
+	Connected = false
 )
 
 func failOnError(err error, msg string) {
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
 		//panic(fmt.Sprintf("%s: %s", msg, err))
-		fmt.Println("Error:", err, msg)
+		fmt.Printf("\nRabbit MQ Consumer Error: %s %s\n", err, msg)
+		connectionChannel <- false
 	}
 }
 
-func Initialize(uri string, queuename string) {
-	conn, err := amqp.Dial(uri)
+func receiveConnectionStatus() {
+	go func() {
+		for {
+			isConnected := <-connectionChannel
+
+			if isConnected != Connected {
+				fmt.Printf("State changed: %b\n", isConnected)
+			}
+			Connected = isConnected
+
+			if Connected == false {
+				//this only works in a go routine
+				fmt.Println("Attempting Connection\n")
+				go Initialize(rabbitmquri, queuename)
+			}
+		}
+	}()
+}
+
+func Initialize(uri string, queue_name string) {
+	go receiveConnectionStatus()
+
+	rabbitmquri = uri
+	queuename = queue_name
+
+	conn, err := amqp.Dial(rabbitmquri)
 	// conn, err := amqp.Dial("amqp://fahoobagats:Fytg*pv2c,iCUT@rabbitmq-statsnode-3a5n:5672/")
 	//failOnError(err, "Failed to connect to RabbitMQ")
 
 	if err != nil {
 		//log.Fatalf("%s: %s", msg, err)
 		//panic(fmt.Sprintf("%s: %s", msg, err))
-		fmt.Println("Rabbit MQ Consumer Error:", err)
+		failOnError(err, "Connection unavailable")
 	} else {
+		connectionChannel <- true
 		fmt.Println("Rabbit MQ Consumer Connected!!")
 		defer conn.Close()
 
@@ -50,30 +86,6 @@ func Initialize(uri string, queuename string) {
 
 		failOnError(err, "Failed to declare a queue")
 
-		// msgs, err := channel.Consume(
-		// 	queue.Name, // queue
-		// 	"",         // consumer
-		// 	true,       // auto-ack
-		// 	false,      // exclusive
-		// 	false,      // no-local
-		// 	false,      // no-wait
-		// 	nil,        // args
-		// )
-		// failOnError(err, "Failed to register a consumer")
-
-		// forever := make(chan bool)
-
-		// go func() {
-		// 	for d := range msgs {
-		// 		//if string(d.Body) == "done" {
-		// 		fmt.Printf("\nReceived all messages: %s\n", d.Body)
-		// 		//}
-		// 	}
-		// }()
-
-		// fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-		// <-forever
-
 		go receiveMessages()
 		Consume()
 
@@ -81,29 +93,23 @@ func Initialize(uri string, queuename string) {
 }
 
 func Consume() {
-	msgs, err := channel.Consume(
-		queue.Name, // queue
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
-	)
-	failOnError(err, "Failed to register a consumer")
+	for {
+		msgs, err := channel.Consume(
+			queue.Name, // queue
+			"",         // consumer
+			true,       // auto-ack
+			false,      // exclusive
+			false,      // no-local
+			false,      // no-wait
+			nil,        // args
+		)
+		failOnError(err, "Failed to register a consumer")
 
-	//holy shit, don't use a for lopp here!
-	forever := make(chan bool)
-	go func() {
-		//for d := range msgs {
 		for d := range msgs {
 			messageChannel <- d.Body
-			// if string(d.Body) == "done" {
-			//fmt.Printf("\nReceived message: %s\n", d.Body)
-			// }
 		}
-	}()
-	<-forever
+
+	}
 }
 
 func receiveMessages() {
